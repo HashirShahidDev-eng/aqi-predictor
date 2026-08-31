@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.claude/settings.local.json
+
+# Model artifacts are registered in the Hopsworks Model Registry by
+# training_pipeline.py; no need to duplicate large binaries in git.
+model_dir/
