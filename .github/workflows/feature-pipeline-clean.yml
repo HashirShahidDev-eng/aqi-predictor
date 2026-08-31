@@ -1,0 +1,38 @@
+name: Hourly feature pipeline
+
+on:
+  schedule:
+    - cron: '10 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: feature-pipeline
+  cancel-in-progress: false
+
+jobs:
+  update-features:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run feature pipeline
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
+          CITY_LAT: ${{ secrets.CITY_LAT }}
+          CITY_LON: ${{ secrets.CITY_LON }}
+        run: python features_pipeline.py
