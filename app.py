@@ -424,14 +424,43 @@ def load_features():
 
 @st.cache_resource(show_spinner=False)
 def load_models():
-  
-    if all(os.path.exists(f"model_dir/model_h{h}.pkl") for h in HORIZONS):
-        return {h: joblib.load(f"model_dir/model_h{h}.pkl") for h in HORIZONS}, "local files"
+    
 
-    model = connect().get_model_registry().get_model(MODEL_NAME)
-    path = model.download()
-    models = {h: joblib.load(os.path.join(path, f"model_h{h}.pkl")) for h in HORIZONS}
-    return models, f"registry v{model.version}"
+    if all(os.path.exists(f"model_dir/model_h{h}.pkl") for h in HORIZONS):
+        models = {h: joblib.load(f"model_dir/model_h{h}.pkl") for h in HORIZONS}
+        return models, "local files"
+
+    registry = connect().get_model_registry()
+    versions = sorted(registry.get_models(MODEL_NAME),
+                      key=lambda m: m.version, reverse=True)
+    if not versions:
+        raise FileNotFoundError(
+            f"No model named '{MODEL_NAME}' in the registry. "
+            "Run training_pipeline.py first.")
+
+    problems = []
+    for candidate in versions:
+        try:
+            path = candidate.download()
+        except Exception as error:            # transient download failure
+            problems.append(f"v{candidate.version}: {type(error).__name__}")
+            continue
+
+        missing = [h for h in HORIZONS
+                   if not os.path.exists(os.path.join(path, f"model_h{h}.pkl"))]
+        if missing:
+            problems.append(f"v{candidate.version}: no model_h{missing[0]}.pkl")
+            continue
+
+        models = {h: joblib.load(os.path.join(path, f"model_h{h}.pkl"))
+                  for h in HORIZONS}
+        return models, f"registry v{candidate.version}"
+
+    raise FileNotFoundError(
+        "No registered version has per-horizon models "
+        f"(model_h{'/'.join(str(h) for h in HORIZONS)}.pkl). "
+        "Checked newest first: " + "; ".join(problems[:5])
+    )
 
 
 def as_row(row, horizon):
