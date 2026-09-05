@@ -1,23 +1,3 @@
-"""
-Training pipeline (v7) — with weather forecast features.
-
-Same structure as the clean v6 trainer, one important difference: the feature
-set is now HORIZON-SPECIFIC. The +24h model gets the forward-weather block for
-24 hours ahead, the +48h model gets the 48h block, and so on. Giving the +24h
-model the 72h forward weather would hand it information about a period past its
-own target — not leakage of the answer, but a mismatch with what inference can
-supply, so each horizon sees only its own block.
-
-The forecast features are why v7 exists. In v6 the model knew the wind speed
-*now* but nothing about what the atmosphere would do between now and the target
-hour, which is most of what determines AQI three days out. That was a
-missing-input problem, and it is why +72h R2 sat at 0.086.
-
-CAVEAT, restated from the backfill: forward features here come from ERA5
-reanalysis — what the weather ACTUALLY did. Live inference will use Open-Meteo
-forecasts, which carry their own error. These CV numbers are therefore an
-upper bound, and the write-up must say so.
-"""
 
 import os
 

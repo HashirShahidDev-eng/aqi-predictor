@@ -61,11 +61,7 @@ def calculate_us_aqi_pm25(pm25):
 def _hourly_to_df(payload, rename):
     df = pd.DataFrame(payload["hourly"]).rename(columns={"time": "timestamp", **rename})
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-    # Open-Meteo returns some fields (e.g. humidity) as whole numbers, which
-    # pandas infers as int64 — but the feature group schema was fixed as
-    # 'double' by the original backfill. Force float64 here so every fetch
-    # (archive, forecast tail, hourly pipeline) matches it regardless of what
-    # a given endpoint/response happens to look like.
+   
     value_cols = [c for c in df.columns if c != "timestamp"]
     df[value_cols] = df[value_cols].astype("float64")
     return df
@@ -131,9 +127,7 @@ def add_forecast_features(df):
         df[f"wind_fc_{h}"] = df["wind_speed"].shift(-h)
         df[f"precip_fc_{h}"] = df["precipitation"].shift(-h)
 
-        # Aggregates over the intervening window — usually the stronger signal.
-        # Total rain over three days scrubs PM2.5 far more than the rain rate
-        # at one particular hour does.
+        
         df[f"wind_mean_next_{h}"] = df["wind_speed"].shift(-h).rolling(h, min_periods=1).mean()
         df[f"wind_max_next_{h}"] = df["wind_speed"].shift(-h).rolling(h, min_periods=1).max()
         df[f"precip_sum_next_{h}"] = df["precipitation"].shift(-h).rolling(h, min_periods=1).sum()
@@ -219,7 +213,7 @@ def build_history_df():
 
     before_drop = len(df)
     df = df.dropna().reset_index(drop=True)
-    # Rows lost at BOTH ends now: the lag warm-up at the start (~89) and the
+    #
     # forward-feature window at the end (72), since the last 72 hours have no
     # future weather to look at yet.
     print(f"After dropna: {len(df)} rows (dropped {before_drop - len(df)})")

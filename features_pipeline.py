@@ -2,9 +2,8 @@
 import backfill_features as bf
 import pandas as pd
 
-PAST_DAYS = 7       # backward window: covers the 72h max lag + 24h rolling, with margin
-FORECAST_DAYS = 4   # forward window: covers the 72h max horizon, with margin
-
+PAST_DAYS = 7       
+FORECAST_DAYS = 4   
 
 def fetch_recent_pollutants():
     payload = bf._get(bf.AIR_QUALITY_URL, {
@@ -85,8 +84,6 @@ def push_to_feature_store(df):
         time_travel_format="HUDI",
     )
     # wait_for_job=False: on an hourly schedule, blocking on materialization
-    # risks colliding with the previous run's job. unix_time is the primary
-    # key, so a re-run upserts rather than duplicating.
     fg.insert(df, write_options={"wait_for_job": False})
     print(f"Upserted {len(df)} row(s) into 'aqi_features_history' "
           f"v{bf.FEATURE_GROUP_VERSION}.")
