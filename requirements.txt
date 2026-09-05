@@ -7,3 +7,5 @@ shap
 matplotlib
 requests
 python-dotenv
+streamlit
+plotly
